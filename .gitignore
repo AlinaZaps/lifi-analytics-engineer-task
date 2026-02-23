@@ -1,0 +1,8 @@
+# .gitignore
+*.duckdb
+*.duckdb.wal
+__pycache__/
+.DS_Store
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
