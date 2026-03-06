@@ -1,0 +1,79 @@
+version: 2
+
+models:
+  - name: fct_lifi_transfers
+    description: >
+      LI.FI transfers enriched with token USD prices and USD/EUR rates.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [tx_hash, log_index]
+    columns:
+      - name: tx_hash
+        description: Transaction hash on the source blockchain.
+        tests:
+          - not_null
+      - name: lifi_transaction_id
+        description: LI.FI-level transaction identifier used to group related events.
+        tests:
+          - not_null
+      - name: block_timestamp
+        description: Block timestamp of the transfer on the source chain.
+        tests:
+          - not_null
+      - name: block_date
+        description: Date (UTC) derived from the block timestamp.
+      - name: block_number
+        description: Block number of the transfer on the source chain.
+      - name: source_chain
+        description: Source blockchain of the transfer.
+        tests:
+          - not_null
+      - name: destination_chain_id
+        description: Numeric identifier of the destination blockchain.
+      - name: lifi_contract_address
+        description: Address of the LI.FI contract that emitted the transfer event.
+      - name: bridge
+        description: Name of the underlying bridge protocol used by LI.FI.
+      - name: integrator
+        description: Name of the integrator using LI.FI (if available).
+      - name: referrer
+        description: Referrer identifier for the transaction (if available).
+      - name: token_address
+        description: Contract address of the bridged token on the source chain.
+        tests:
+          - not_null
+      - name: bridge_receiver
+        description: Recipient address on the destination chain for the bridged funds.
+      - name: min_amount_raw
+        description: Minimum bridged token amount in raw units (before applying decimals).
+        tests:
+          - not_null
+      - name: min_amount_usd
+        description: >
+          Notional minimum bridged amount in USD after applying token decimals and price.
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR (min_amount_usd > 0 AND min_amount_usd < 100000000)"
+      - name: min_amount_eur
+        description: >
+          Notional minimum bridged amount in EUR derived from USD amount and FX rate.
+        tests:
+          - dbt_utils.expression_is_true:
+              expression: "IS NULL OR (min_amount_eur > 0 AND min_amount_eur < 100000000)"
+      - name: symbol
+        description: Token symbol associated with the bridged token.
+      - name: price_usd
+        description: Token price in USD at the time of the transfer.
+      - name: tx_sender
+        description: Address that initiated the transaction on the source chain.
+      - name: tx_recipient
+        description: Address that received the transaction on the source chain (if applicable).
+      - name: has_source_swaps
+        description: Binary flag indicating whether swaps occurred on the source chain.
+      - name: has_destination_call
+        description: Binary flag indicating whether a destination call was executed.
+      - name: tx_index
+        description: Index of the transaction within the block.
+      - name: log_index
+        description: Index of the log event within the transaction.
+

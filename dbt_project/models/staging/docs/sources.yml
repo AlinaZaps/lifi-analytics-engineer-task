@@ -1,0 +1,32 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    description: Raw data loaded by ingestion scripts into DuckDB.
+    tables:
+      - name: raw_lifi_transfers
+        loaded_at_field: "CAST(evt_block_time AS TIMESTAMP)"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        description: >
+          Raw LI.FI bridge transfer events from
+          lifi_multichain.LiFiDiamond_v2_evt_LiFiTransferStarted.
+          The bridgeData column contains a JSON object that is unpacked
+          in the staging layer.
+      - name: raw_token_usd_prices
+        loaded_at_field: "CAST(minute AS TIMESTAMP)"
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+        description: >
+          Token prices in USD from Dune Analytics (prices.usd).
+          Minute-level granularity per blockchain and contract address.
+      - name: raw_fx_rates
+        loaded_at_field: "CAST(rate_date AS TIMESTAMP)"
+        freshness:
+          warn_after: {count: 48, period: hour}
+          error_after: {count: 72, period: hour}
+        description: >
+          Daily FX rates (e.g. USD/EUR, USD/GBP) from Fixer.io.
