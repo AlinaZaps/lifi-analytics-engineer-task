@@ -9,3 +9,4 @@ dbt_project/dbt_packages/
 dbt_project/logs/
 .venv/
 .claude/
+.vscode/
