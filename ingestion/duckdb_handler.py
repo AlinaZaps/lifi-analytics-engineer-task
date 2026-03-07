@@ -5,10 +5,11 @@ Loads transfer events, token USD prices, and FX rates into a local DuckDB databa
 
 import os
 import time
+from datetime import date
+from functools import partial
 import duckdb
 import pandas as pd
 import requests
-from functools import partial
 from dotenv import load_dotenv
 from dune_client.client import DuneClient
 from dune_client.query import QueryBase
@@ -18,8 +19,10 @@ load_dotenv()
 DB_PATH = "data/lifi.duckdb"
 DUNE_QUERY_ID = 6791796
 BATCH_SIZE = 250_000
+MAX_BATCHES = 100  # safety limit — 100 × 250k = 25M rows max
 SLEEP_BETWEEN_CALLS = 1.5  # seconds — avoids 429 rate limits
 FIXER_API_KEY = os.environ["FIXER_API_KEY"]
+FIXER_BASE_URL = "https://data.fixer.io/api"
 
 def load_transfers(con: duckdb.DuckDBPyConnection) -> None:
     """Load raw LI.FI transfer events from CSV into DuckDB."""
@@ -60,6 +63,9 @@ def load_token_prices(con: duckdb.DuckDBPyConnection) -> None:
         batch_num += 1
         if batch.next_offset is None:
             break
+        if batch_num >= MAX_BATCHES:
+            print(f"  Warning: reached {MAX_BATCHES} batches — stopping to prevent runaway loop")
+            break
         offset = int(batch.next_offset)
         time.sleep(SLEEP_BETWEEN_CALLS)
 
@@ -67,8 +73,8 @@ def load_token_prices(con: duckdb.DuckDBPyConnection) -> None:
     print(f"  Loaded {count:,} rows → raw_token_usd_prices")
 
 
-def load_fx_rates(con: duckdb.DuckDBPyConnection, start_date: str, end_date: str) -> None:
-    """Load daily USD/GBP→EUR FX rates from Fixer.io into DuckDB.
+def load_fx_rates(con: duckdb.DuckDBPyConnection, start_date: date, end_date: date) -> None:
+    """Load daily USD→EUR FX rates from Fixer.io into DuckDB.
     Fixer free tier returns EUR as base, so rates are inverted to get X→EUR.
     """
     print(f"Loading FX rates ({start_date} → {end_date}) ...")
@@ -76,14 +82,20 @@ def load_fx_rates(con: duckdb.DuckDBPyConnection, start_date: str, end_date: str
     rows = []
     for date in pd.date_range(start_date, end_date):
         date_str = date.strftime("%Y-%m-%d")
-        try:
-            resp = requests.get(
-                f"https://data.fixer.io/api/{date_str}",
-                params={"access_key": FIXER_API_KEY, "symbols": "USD"},
-                timeout=10,
-            ).json()
-        except requests.RequestException as e:
-            print(f"  Warning: {date_str} — request failed: {e}")
+        resp = None
+        for attempt in range(3):
+            try:
+                resp = requests.get(
+                    f"{FIXER_BASE_URL}/{date_str}",
+                    params={"access_key": FIXER_API_KEY, "symbols": "USD"},
+                    timeout=10,
+                ).json()
+                break
+            except requests.RequestException as e:
+                print(f"  Warning: {date_str} — attempt {attempt + 1}/3 failed: {e}")
+                time.sleep(SLEEP_BETWEEN_CALLS)
+
+        if resp is None:
             continue
 
         if not resp.get("success"):
@@ -110,7 +122,7 @@ def main():
     loaders = [
         ("transfers", load_transfers),
         ("token_prices", load_token_prices),
-        ("fx_rates", partial(load_fx_rates, start_date="2026-02-01", end_date="2026-02-11")),
+        ("fx_rates", partial(load_fx_rates, start_date=date(2026, 2, 1), end_date=date(2026, 2, 11))),
     ]
  
     with duckdb.connect(DB_PATH) as con:
