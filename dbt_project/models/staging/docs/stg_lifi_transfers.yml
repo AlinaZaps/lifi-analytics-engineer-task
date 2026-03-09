@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: stg_lifi_transfers
+    description: >
+      Cleaned LI.FI transfer events with bridgeData JSON unpacked into
+      individual columns. One row per transfer event.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [tx_hash, log_index]
+    columns:
+      - name: tx_hash
+        description: On-chain transaction hash.
+        tests:
+          - not_null
+      - name: log_index
+        description: Event log index within the transaction.
+        tests:
+          - not_null
+      - name: tx_sender
+        description: Address that initiated the transaction.
+      - name: tx_recipient
+        description: Address the transaction was sent to (usually the LiFi contract).
+      - name: tx_index
+        description: Transaction index within the block.
+      - name: block_number
+        description: Block number.
+      - name: block_date
+        description: Block date.
+      - name: block_timestamp
+        description: Block timestamp.
+      - name: source_chain
+        description: Source blockchain (e.g. arbitrum, gnosis).
+        tests:
+          - not_null
+      - name: lifi_contract_address
+        description: LI.FI Diamond contract address.
+      - name: lifi_transaction_id
+        description: LI.FI internal transaction identifier.
+      - name: bridge
+        description: Bridge protocol used (e.g. stargateV2, across).
+        tests:
+          - not_null
+      - name: integrator
+        description: Frontend or integrator that initiated the transfer.
+      - name: referrer
+        description: Referrer address (zero-address if none).
+      - name: token_address
+        description: >
+          Token contract address on the source chain.
+          Zero-address (0x000...0) means native token (ETH, xDAI, etc.).
+        tests:
+          - not_null
+      - name: bridge_receiver
+        description: Destination address receiving the bridged tokens.
+      - name: min_amount_raw
+        description: >
+          Minimum amount in the token's smallest unit (not decimal-adjusted).
+      - name: destination_chain_id
+        description: EVM chain ID of the destination chain.
+      - name: has_source_swaps
+        description: Whether a swap occurred before bridging.
+      - name: has_destination_call
+        description: Whether a contract call is made on the destination chain.

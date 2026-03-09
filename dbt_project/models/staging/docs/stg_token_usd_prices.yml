@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_token_usd_prices
+    description: >
+      Cleaned token USD prices from Dune's prices.usd table.
+      Minute-level granularity. Rows with zero price are filtered out.
+    columns:
+      - name: price_time
+        description: Price observation timestamp (minute granularity).
+        tests:
+          - not_null
+      - name: blockchain
+        description: Blockchain name (e.g. arbitrum, gnosis, mantle).
+        tests:
+          - not_null
+      - name: contract_address
+        description: Token contract address on the given blockchain.
+        tests:
+          - not_null
+      - name: symbol
+        description: Token ticker symbol (e.g. WETH, USDC).
+      - name: decimals
+        description: Number of decimal places for the token (e.g. 18 for ETH, 6 for USDC).
+      - name: price_usd
+        description: Token price in USD at the given minute.
+        tests:
+          - not_null

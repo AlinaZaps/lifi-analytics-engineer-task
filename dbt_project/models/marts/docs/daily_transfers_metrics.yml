@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: daily_transfers_metrics
+    description: >
+      Daily LI.FI transfer metrics aggregated from fct_lifi_transfers,
+      including counts and USD/EUR volumes by source chain and bridge.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [block_date, source_chain, bridge]
+    columns:
+      - name: block_date
+        description: UTC date of the transfer.
+        tests:
+          - not_null
+      - name: source_chain
+        description: Source blockchain of the transfer (e.g. arbitrum, gnosis).
+        tests:
+          - not_null
+      - name: bridge
+        description: Underlying bridge protocol used by LI.FI for the transfers.
+        tests:
+          - not_null
+      - name: transfers_count
+        description: Number of LI.FI transfers on the given day, chain and bridge.
+      - name: volume_usd
+        description: Total bridged volume in USD for the given day, chain and bridge.
+      - name: volume_eur
+        description: Total bridged volume in EUR for the given day, chain and bridge.
+      - name: avg_volume_usd
+        description: Average bridged transfer size in USD for the given day, chain and bridge.
+      - name: avg_volume_eur
+        description: Average bridged transfer size in EUR for the given day, chain and bridge.

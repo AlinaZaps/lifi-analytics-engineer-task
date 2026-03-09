@@ -1,0 +1,7 @@
+lifi_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/lifi.duckdb
+      threads: 1

@@ -1,0 +1,28 @@
+version: 2
+
+seeds:
+  - name: stg_seed__native_token_mapping
+    description: >
+      Maps native token zero-addresses to their wrapped token contract addresses
+      per chain. Used in fct_lifi_transfers to join native token transfers
+      with price data from Dune's prices.usd table.
+    columns:
+      - name: chain
+        description: Blockchain name matching source_chain in transfers (e.g. arbitrum, gnosis).
+        tests:
+          - not_null
+          - unique
+      - name: contract_address
+        description: >
+          Native token address — always the zero-address
+          (0x0000000000000000000000000000000000000000).
+        tests:
+          - not_null
+      - name: wrapped_contract_address
+        description: >
+          Wrapped token contract address used for price lookups in Dune.
+          May be empty if the chain has no price data available (e.g. bob).
+      - name: native_token_symbol
+        description: Native token ticker symbol (e.g. ETH, KLAY, XDAI, APE, MNT).
+        tests:
+          - not_null
